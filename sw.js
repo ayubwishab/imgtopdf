@@ -3,6 +3,7 @@ const ASSETS = [
     './',
     './index.html',
     './app.js',
+    './icon-192.png', // Sesuaikan di sini juga
     'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
 ];
 
