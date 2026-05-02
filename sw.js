@@ -1,10 +1,11 @@
-const CACHE_NAME = 'bw-pdf-v1';
+const CACHE_NAME = 'pro-scanner-v1';
 const ASSETS = [
     './',
     './index.html',
     './app.js',
     './icon-192.png',
-    'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
+    'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+    'https://docs.opencv.org/4.5.4/opencv.js'
 ];
 
 self.addEventListener('install', e => {
