@@ -1,6 +1,6 @@
 {
-  "name": "Image to PDF Offline",
-  "short_name": "Img2PDF",
+  "name": "BW Scanner Offline",
+  "short_name": "BWScan",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f0f2f5",
