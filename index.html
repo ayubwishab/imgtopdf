@@ -3,44 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Img2PDF - Offline</title>
+    <title>Pro Scanner Web</title>
     <link rel="manifest" href="manifest.json">
+    <!-- Libraries -->
+    <script async src="https://docs.opencv.org/4.5.4/opencv.js" type="text/javascript"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 20px; background: #f0f2f5; margin: 0; }
-        .header { background: #fff; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
-        #preview-container { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-top: 20px; padding: 10px; }
-        
-        .img-wrapper { position: relative; display: inline-block; animation: fadeIn 0.3s ease; }
-        img { width: 120px; height: 160px; object-fit: cover; border: 3px solid #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        
-        .del-btn { position: absolute; top: -10px; right: -10px; background: #ff4d4d; color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        
-        .controls { margin: 20px 0; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-        button { padding: 12px 20px; cursor: pointer; border-radius: 25px; border: none; background: #007bff; color: white; font-weight: 600; transition: 0.2s; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        button:active { transform: scale(0.95); }
-        
-        #video-feed { width: 100%; max-width: 400px; display: none; margin: 15px auto; border-radius: 15px; background: #000; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f4f7f6; margin: 0; padding: 0; }
+        .header { background: #ffffff; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        .controls { display: flex; justify-content: center; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+        button { padding: 12px 24px; border-radius: 50px; border: none; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        .btn-gallery { background: #6c757d; color: white; }
+        .btn-camera { background: #17a2b8; color: white; }
+        .btn-save { background: #28a745; color: white; }
+        button:disabled { background: #ccc; transform: none; }
+        #preview-container { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; padding: 20px; }
+        .img-wrapper { position: relative; border: 4px solid white; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        img { width: 120px; height: 160px; object-fit: cover; display: block; border-radius: 5px; filter: grayscale(100%) contrast(1.2); }
+        .del-btn { position: absolute; top: -12px; right: -12px; background: #ff4d4d; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; font-weight: bold; cursor: pointer; }
+        #video-feed { width: 100%; max-width: 450px; display: none; margin: 20px auto; border-radius: 20px; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        #snap-btn { display: none; background: #ff4d4d; color: white; margin: 10px auto 30px; padding: 15px 40px; font-size: 18px; }
+        canvas { display: none; }
     </style>
 </head>
 <body>
-
     <div class="header">
-        <h2>Simple Img2PDF</h2>
+        <h1>Pro Document Scanner</h1>
         <div class="controls">
             <input type="file" id="file-input" accept="image/*" multiple hidden>
-            <button onclick="document.getElementById('file-input').click()" style="background: #6c757d;">+ Galeri</button>
-            <button onclick="openCamera()" style="background: #17a2b8;">+ Kamera</button>
-            <button id="convert-btn" style="background: #28a745;" disabled>Simpan PDF</button>
+            <button class="btn-gallery" onclick="document.getElementById('file-input').click()">+ Galeri</button>
+            <button class="btn-camera" onclick="openCamera()">+ Kamera</button>
+            <button id="convert-btn" class="btn-save" disabled>Simpan PDF Pro</button>
         </div>
     </div>
 
     <video id="video-feed" autoplay playsinline></video>
-    <button id="snap-btn" style="display:none; background:#ff4d4d; margin-bottom: 20px;">Ambil Foto</button>
+    <button id="snap-btn" onclick="takePhoto()">AMBIL FOTO</button>
 
     <div id="preview-container"></div>
+    <canvas id="canvasOutput"></canvas>
 
     <script src="app.js"></script>
 </body>
