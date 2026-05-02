@@ -1,10 +1,10 @@
 {
-  "name": "BW Scanner Offline",
-  "short_name": "BWScan",
+  "name": "Pro Scanner Offline",
+  "short_name": "ProScan",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f0f2f5",
-  "theme_color": "#007bff",
+  "background_color": "#f4f7f6",
+  "theme_color": "#17a2b8",
   "icons": [
     {
       "src": "icon-192.png",
