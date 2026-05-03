@@ -7,12 +7,23 @@ const snapBtn = document.getElementById('snap-btn');
 const qSlider = document.getElementById('q-slider');
 const qLabel = document.getElementById('q-label');
 
-// Update label kualitas slider
+// Update label slider dengan estimasi kategori ukuran
 qSlider.oninput = function() { 
-    qLabel.innerText = Math.round(this.value * 100) + "%"; 
+    let val = parseFloat(this.value);
+    let estimasi = "";
+    
+    if (val <= 0.3) {
+        estimasi = "(Kecil: < 1.5MB)";
+    } else if (val <= 0.6) {
+        estimasi = "(Sedang: 1.5MB - 3MB)";
+    } else {
+        estimasi = "(Kualitas Tinggi: > 3MB)";
+    }
+    
+    qLabel.innerText = Math.round(val * 100) + "% " + estimasi; 
 };
 
-// Handle input file
+// Input file dari galeri[cite: 4]
 document.getElementById('file-input').addEventListener('change', (e) => {
     Array.from(e.target.files).forEach(file => {
         const reader = new FileReader();
@@ -38,7 +49,7 @@ function removeImage(index) {
     convertBtn.disabled = !imageList.some(img => img !== null);
 }
 
-// Fitur Kamera
+// Logika Kamera[cite: 4]
 async function openCamera() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
@@ -46,7 +57,7 @@ async function openCamera() {
         video.style.display = "block";
         snapBtn.style.display = "block";
         video.scrollIntoView({ behavior: 'smooth' });
-    } catch (err) { alert("Kamera error."); }
+    } catch (err) { alert("Akses kamera ditolak."); }
 }
 
 function takePhoto() {
@@ -57,7 +68,7 @@ function takePhoto() {
     addImageToList(canvas.toDataURL('image/jpeg', 0.8));
 }
 
-// Proses Scan dan Kompresi[cite: 3, 4]
+// Pengolahan Gambar Pro (OpenCV)[cite: 4]
 async function processScan(imageSrc, quality) {
     return new Promise((resolve) => {
         const img = new Image();
@@ -66,7 +77,7 @@ async function processScan(imageSrc, quality) {
             let gray = new cv.Mat();
             let dst = new cv.Mat();
             
-            // Resize otomatis agar ukuran file kecil[cite: 3, 4]
+            // Resize otomatis ke 1200px agar tidak langsung bengkak
             let width = src.cols;
             let height = src.rows;
             const MAX_WIDTH = 1200; 
@@ -76,14 +87,14 @@ async function processScan(imageSrc, quality) {
                 cv.resize(src, src, new cv.Size(width, height), 0, 0, cv.INTER_AREA);
             }
 
-            // Adaptive Thresholding untuk hasil scan bersih[cite: 4]
+            // Adaptive Thresholding untuk hasil BW bersih[cite: 4]
             cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
             cv.normalize(gray, gray, 0, 255, cv.NORM_MINMAX);
             cv.adaptiveThreshold(gray, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 51, 25);
             
             cv.imshow('canvasOutput', dst);
             
-            // Kompresi Kualitas JPEG[cite: 3, 4]
+            // Kompresi sesuai nilai slider[cite: 4]
             const dataUrl = document.getElementById('canvasOutput').toDataURL('image/jpeg', parseFloat(quality));
             
             src.delete(); gray.delete(); dst.delete();
@@ -93,9 +104,9 @@ async function processScan(imageSrc, quality) {
     });
 }
 
-// Generate PDF[cite: 3, 4]
+// Logika Simpan dengan Cek Ukuran Otomatis
 convertBtn.onclick = async () => {
-    if (typeof cv === 'undefined' || !cv.Mat) return alert("Sabar, OpenCV sedang loading...");
+    if (typeof cv === 'undefined' || !cv.Mat) return alert("Sabar, modul scanner sedang memuat...");
     
     const doc = new jsPDF();
     const activeImages = imageList.filter(img => img !== null);
@@ -109,7 +120,20 @@ convertBtn.onclick = async () => {
         
         doc.addImage(processedData, 'JPEG', 0, 0, pWidth, pHeight, undefined, 'FAST');
     }
-    doc.save('Hasil_Scan_AyubR.pdf');
+
+    // Hitung ukuran file PDF sebelum download[cite: 3]
+    const pdfOutput = doc.output('blob');
+    const fileSizeMB = pdfOutput.size / (1024 * 1024);
+
+    // Jika ukuran > 2MB dan user belum melakukan kompresi rendah, beri pilihan[cite: 3, 4]
+    if (fileSizeMB > 2 && quality > 0.5) {
+        const konfirmasi = confirm(`Ukuran file terdeteksi ${fileSizeMB.toFixed(2)} MB (Melebihi target 2MB).\n\nIngin tetap simpan?\nAtau klik 'Cancel' dan geser slider ke arah 30%-40% untuk mengecilkan.`);
+        if (!konfirmasi) return; 
+    }
+
+    doc.save('Hasil_Scan_AyubR_2026.pdf');
 };
 
-if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+}
