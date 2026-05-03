@@ -7,9 +7,16 @@ const snapBtn = document.getElementById('snap-btn');
 const qSlider = document.getElementById('q-slider');
 const qLabel = document.getElementById('q-label');
 const filterSelect = document.getElementById('filter-select');
+const filenameInput = document.getElementById('filename-input');
 
-qSlider.oninput = function() { qLabel.innerText = Math.round(this.value * 100) + "%"; };
+// Update label slider dengan estimasi kategori ukuran
+qSlider.oninput = function() { 
+    let val = parseFloat(this.value);
+    let estimasi = val <= 0.3 ? "(Kecil)" : (val <= 0.6 ? "(Sedang)" : "(Tinggi)");
+    qLabel.innerText = Math.round(val * 100) + "% " + estimasi; 
+};
 
+// Input file dari galeri
 document.getElementById('file-input').addEventListener('change', (e) => {
     Array.from(e.target.files).forEach(file => {
         const reader = new FileReader();
@@ -35,13 +42,15 @@ function removeImage(index) {
     convertBtn.disabled = !imageList.some(img => img !== null);
 }
 
+// Logika Kamera
 async function openCamera() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         video.srcObject = stream;
         video.style.display = "block";
         snapBtn.style.display = "block";
-    } catch (err) { alert("Kamera error."); }
+        video.scrollIntoView({ behavior: 'smooth' });
+    } catch (err) { alert("Akses kamera ditolak."); }
 }
 
 function takePhoto() {
@@ -52,70 +61,108 @@ function takePhoto() {
     addImageToList(canvas.toDataURL('image/jpeg', 0.8));
 }
 
-// Logika Pemrosesan Gambar Berdasarkan Filter
+// Pemrosesan Gambar dengan Filter & Proteksi Blank Putih
 async function processImage(imageSrc, filter, quality) {
     return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => {
-            let src = cv.imread(img);
-            let dst = new cv.Mat();
-            
-            // Resize otomatis ke 1200px agar file ringan
-            let width = src.cols;
-            let height = src.rows;
-            const MAX_WIDTH = 1200; 
-            if (width > MAX_WIDTH) {
-                height = Math.round(height * (MAX_WIDTH / width));
-                width = MAX_WIDTH;
-                cv.resize(src, src, new cv.Size(width, height), 0, 0, cv.INTER_AREA);
-            }
+            try {
+                let src = cv.imread(img);
+                let dst = new cv.Mat();
+                
+                // 1. Resize otomatis ke 1200px agar file ringan
+                let width = src.cols;
+                let height = src.rows;
+                const MAX_WIDTH = 1200; 
+                if (width > MAX_WIDTH) {
+                    height = Math.round(height * (MAX_WIDTH / width));
+                    width = MAX_WIDTH;
+                    cv.resize(src, src, new cv.Size(width, height), 0, 0, cv.INTER_AREA);
+                }
 
-            // Aplikasi Filter
-            if (filter === 'enhanced') {
-                // Tingkatkan Kontras & Kecerahan
-                src.convertTo(dst, -1, 1.2, 10);
-            } else if (filter === 'bw') {
-                // Hitam Putih Bersih
-                cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);
-                cv.adaptiveThreshold(dst, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 51, 25);
-            } else {
-                // Normal
-                dst = src.clone();
-            }
+                // 2. Aplikasi Filter
+                if (filter === 'enhanced') {
+                    src.convertTo(dst, -1, 1.1, 5); // Kecerahan & Kontras
+                } else if (filter === 'bw') {
+                    let temp = new cv.Mat();
+                    cv.cvtColor(src, temp, cv.COLOR_RGBA2GRAY);
+                    cv.adaptiveThreshold(temp, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 51, 25);
+                    temp.delete();
+                } else {
+                    dst = src.clone(); // Mode Normal
+                }
 
-            cv.imshow('canvasOutput', dst);
-            const dataUrl = document.getElementById('canvasOutput').toDataURL('image/jpeg', parseFloat(quality));
-            
-            src.delete(); dst.delete();
-            resolve(dataUrl);
+                cv.imshow('canvasOutput', dst);
+                const dataUrl = document.getElementById('canvasOutput').toDataURL('image/jpeg', parseFloat(quality));
+                
+                src.delete(); dst.delete();
+                resolve(dataUrl);
+            } catch (err) {
+                console.error("OpenCV Error, menggunakan gambar asli:", err);
+                resolve(imageSrc); // Fallback: kirim gambar asli jika gagal agar tidak blank
+            }
         };
         img.src = imageSrc;
     });
 }
 
+// Logika Simpan PDF dengan Custom Nama & Deteksi Ukuran
 convertBtn.onclick = async () => {
-    if (typeof cv === 'undefined' || !cv.Mat) return alert("Sabar, OpenCV sedang loading...");
+    if (typeof cv === 'undefined' || !cv.Mat) {
+        return alert("Modul Scanner sedang bersiap, tunggu sebentar lalu klik lagi.");
+    }
     
-    const doc = new jsPDF();
     const activeImages = imageList.filter(img => img !== null);
+    if (activeImages.length === 0) return;
+
+    const doc = new jsPDF();
     const quality = qSlider.value;
-    const selectedFilter = filterSelect.value; // Ambil pilihan filter dari dropdown
+    const selectedFilter = filterSelect.value;
+    
+    // Logika Penamaan File
+    const userFileName = filenameInput.value.trim();
+    const finalFileName = userFileName ? `${userFileName}.pdf` : 'Hasil_Scan_AyubR_2026.pdf';
 
-    for (let i = 0; i < activeImages.length; i++) {
-        if (i > 0) doc.addPage();
-        const processedData = await processImage(activeImages[i], selectedFilter, quality);
-        const pWidth = doc.internal.pageSize.getWidth();
-        const pHeight = doc.internal.pageSize.getHeight();
-        doc.addImage(processedData, 'JPEG', 0, 0, pWidth, pHeight, undefined, 'FAST');
+    convertBtn.innerText = "Memproses...";
+    convertBtn.disabled = true;
+
+    try {
+        for (let i = 0; i < activeImages.length; i++) {
+            if (i > 0) doc.addPage();
+            
+            const processedData = await processImage(activeImages[i], selectedFilter, quality);
+            const pWidth = doc.internal.pageSize.getWidth();
+            const pHeight = doc.internal.pageSize.getHeight();
+            
+            doc.addImage(processedData, 'JPEG', 0, 0, pWidth, pHeight, undefined, 'FAST');
+        }
+
+        const pdfOutput = doc.output('blob');
+        const fileSizeMB = pdfOutput.size / (1024 * 1024);
+
+        // Deteksi ukuran file > 2MB
+        if (fileSizeMB > 2 && quality > 0.5) {
+            const konfirmasi = confirm(`Ukuran file: ${fileSizeMB.toFixed(2)} MB (Melebihi target 2MB).\n\nTetap simpan?\nAtau klik 'Cancel' dan geser slider ke arah 30%-40% untuk mengecilkan.`);
+            if (!confirmasi) {
+                resetBtn();
+                return;
+            }
+        }
+
+        doc.save(finalFileName);
+    } catch (err) {
+        alert("Gagal membuat PDF.");
+        console.error(err);
+    } finally {
+        resetBtn();
     }
-
-    const pdfOutput = doc.output('blob');
-    const fileSizeMB = pdfOutput.size / (1024 * 1024);
-
-    if (fileSizeMB > 2 && quality > 0.5) {
-        const konfirmasi = confirm(`Ukuran file: ${fileSizeMB.toFixed(2)} MB. Tetap simpan?`);
-        if (!konfirmasi) return; 
-    }
-
-    doc.save('Hasil_Scan_AyubR_2026.pdf');
 };
+
+function resetBtn() {
+    convertBtn.innerText = "SIMPAN PDF SEKARANG";
+    convertBtn.disabled = false;
+}
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+}
