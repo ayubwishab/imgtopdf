@@ -108,20 +108,14 @@ async function processImage(imageSrc, filter, quality) {
 
 // Logika Simpan PDF dengan Custom Nama & Deteksi Ukuran
 convertBtn.onclick = async () => {
-    if (typeof cv === 'undefined' || !cv.Mat) {
-        return alert("Modul Scanner sedang bersiap, tunggu sebentar lalu klik lagi.");
-    }
+    if (typeof cv === 'undefined' || !cv.Mat) return alert("Sabar, modul scanner sedang memuat...");
     
     const activeImages = imageList.filter(img => img !== null);
-    if (activeImages.length === 0) return;
+    if (activeImages.length === 0) return alert("Pilih gambar dulu!");
 
     const doc = new jsPDF();
     const quality = qSlider.value;
-    const selectedFilter = filterSelect.value;
-    
-    // Logika Penamaan File
-    const userFileName = filenameInput.value.trim();
-    const finalFileName = userFileName ? `${userFileName}.pdf` : 'Hasil_Scan_AyubR_2026.pdf';
+    const selectedFilter = document.getElementById('filter-select').value;
 
     convertBtn.innerText = "Memproses...";
     convertBtn.disabled = true;
@@ -131,22 +125,43 @@ convertBtn.onclick = async () => {
             if (i > 0) doc.addPage();
             
             const processedData = await processImage(activeImages[i], selectedFilter, quality);
-            const pWidth = doc.internal.pageSize.getWidth();
-            const pHeight = doc.internal.pageSize.getHeight();
             
-            doc.addImage(processedData, 'JPEG', 0, 0, pWidth, pHeight, undefined, 'FAST');
+            // --- LOGIKA ANTI GEPENG ---
+            const imgProps = doc.getImageProperties(processedData);
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            
+            // Hitung rasio agar gambar proporsional
+            const widthRatio = pageWidth / imgProps.width;
+            const heightRatio = pageHeight / imgProps.height;
+            const ratio = Math.min(widthRatio, heightRatio);
+            
+            const imgWidth = imgProps.width * ratio;
+            const imgHeight = imgProps.height * ratio;
+            
+            // Posisikan di tengah halaman
+            const xOffset = (pageWidth - imgWidth) / 2;
+            const yOffset = (pageHeight - imgHeight) / 2;
+            
+            doc.addImage(processedData, 'JPEG', xOffset, yOffset, imgWidth, imgHeight, undefined, 'FAST');
+            // ---------------------------
         }
 
         const pdfOutput = doc.output('blob');
         const fileSizeMB = pdfOutput.size / (1024 * 1024);
 
-        // Deteksi ukuran file > 2MB
         if (fileSizeMB > 2 && quality > 0.5) {
-            const konfirmasi = confirm(`Ukuran file: ${fileSizeMB.toFixed(2)} MB (Melebihi target 2MB).\n\nTetap simpan?\nAtau klik 'Cancel' dan geser slider ke arah 30%-40% untuk mengecilkan.`);
-            if (!confirmasi) {
-                resetBtn();
-                return;
-            }
+            const konfirmasi = confirm(`Ukuran: ${fileSizeMB.toFixed(2)} MB. Tetap simpan?`);
+            if (!konfirmasi) { resetBtn(); return; }
+        }
+
+        doc.save('Hasil_Scan_AyubR_2026.pdf');
+    } catch (err) {
+        alert("Terjadi kesalahan.");
+        console.error(err);
+    } finally {
+        resetBtn();
+    }
         }
 
         doc.save(finalFileName);
