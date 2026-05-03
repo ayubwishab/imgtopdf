@@ -7,12 +7,12 @@ const snapBtn = document.getElementById('snap-btn');
 const qSlider = document.getElementById('q-slider');
 const qLabel = document.getElementById('q-label');
 
-// Update label slider kualitas
+// Update label kualitas slider
 qSlider.oninput = function() { 
     qLabel.innerText = Math.round(this.value * 100) + "%"; 
 };
 
-// Input dari Galeri
+// Handle input file
 document.getElementById('file-input').addEventListener('change', (e) => {
     Array.from(e.target.files).forEach(file => {
         const reader = new FileReader();
@@ -38,7 +38,7 @@ function removeImage(index) {
     convertBtn.disabled = !imageList.some(img => img !== null);
 }
 
-// Logika Kamera[cite: 4]
+// Fitur Kamera
 async function openCamera() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
@@ -46,7 +46,7 @@ async function openCamera() {
         video.style.display = "block";
         snapBtn.style.display = "block";
         video.scrollIntoView({ behavior: 'smooth' });
-    } catch (err) { alert("Akses kamera ditolak."); }
+    } catch (err) { alert("Kamera error."); }
 }
 
 function takePhoto() {
@@ -57,7 +57,7 @@ function takePhoto() {
     addImageToList(canvas.toDataURL('image/jpeg', 0.8));
 }
 
-// Pengolahan Gambar Pro (OpenCV)[cite: 4]
+// Proses Scan dan Kompresi[cite: 3, 4]
 async function processScan(imageSrc, quality) {
     return new Promise((resolve) => {
         const img = new Image();
@@ -66,7 +66,7 @@ async function processScan(imageSrc, quality) {
             let gray = new cv.Mat();
             let dst = new cv.Mat();
             
-            // Kompresi Dimensi (Resize otomatis) agar file ringan[cite: 3, 4]
+            // Resize otomatis agar ukuran file kecil[cite: 3, 4]
             let width = src.cols;
             let height = src.rows;
             const MAX_WIDTH = 1200; 
@@ -76,14 +76,14 @@ async function processScan(imageSrc, quality) {
                 cv.resize(src, src, new cv.Size(width, height), 0, 0, cv.INTER_AREA);
             }
 
-            // Efek Scan BW Bersih[cite: 4]
+            // Adaptive Thresholding untuk hasil scan bersih[cite: 4]
             cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
             cv.normalize(gray, gray, 0, 255, cv.NORM_MINMAX);
             cv.adaptiveThreshold(gray, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 51, 25);
             
             cv.imshow('canvasOutput', dst);
             
-            // Kompresi Kualitas sesuai Slider[cite: 4]
+            // Kompresi Kualitas JPEG[cite: 3, 4]
             const dataUrl = document.getElementById('canvasOutput').toDataURL('image/jpeg', parseFloat(quality));
             
             src.delete(); gray.delete(); dst.delete();
@@ -93,9 +93,9 @@ async function processScan(imageSrc, quality) {
     });
 }
 
-// Pembuatan PDF[cite: 3, 4]
+// Generate PDF[cite: 3, 4]
 convertBtn.onclick = async () => {
-    if (typeof cv === 'undefined' || !cv.Mat) return alert("Sabar, modul scanner sedang dimuat...");
+    if (typeof cv === 'undefined' || !cv.Mat) return alert("Sabar, OpenCV sedang loading...");
     
     const doc = new jsPDF();
     const activeImages = imageList.filter(img => img !== null);
@@ -112,7 +112,4 @@ convertBtn.onclick = async () => {
     doc.save('Hasil_Scan_AyubR.pdf');
 };
 
-// PWA Offline Mode[cite: 4]
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
-}
+if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
