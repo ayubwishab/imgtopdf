@@ -7,9 +7,8 @@ const snapBtn = document.getElementById('snap-btn');
 const qSlider = document.getElementById('q-slider');
 const qLabel = document.getElementById('q-label');
 const filterSelect = document.getElementById('filter-select');
-const filenameInput = document.getElementById('filename-input');
 
-// Update label slider dengan estimasi kategori ukuran
+// Update label kualitas slider
 qSlider.oninput = function() { 
     let val = parseFloat(this.value);
     let estimasi = val <= 0.3 ? "(Kecil)" : (val <= 0.6 ? "(Sedang)" : "(Tinggi)");
@@ -61,7 +60,7 @@ function takePhoto() {
     addImageToList(canvas.toDataURL('image/jpeg', 0.8));
 }
 
-// Pemrosesan Gambar dengan Filter & Proteksi Blank Putih
+// Pengolahan Gambar dengan Filter & Resize
 async function processImage(imageSrc, filter, quality) {
     return new Promise((resolve) => {
         const img = new Image();
@@ -70,7 +69,7 @@ async function processImage(imageSrc, filter, quality) {
                 let src = cv.imread(img);
                 let dst = new cv.Mat();
                 
-                // 1. Resize otomatis ke 1200px agar file ringan
+                // 1. Resize otomatis agar ukuran file ringan
                 let width = src.cols;
                 let height = src.rows;
                 const MAX_WIDTH = 1200; 
@@ -82,14 +81,14 @@ async function processImage(imageSrc, filter, quality) {
 
                 // 2. Aplikasi Filter
                 if (filter === 'enhanced') {
-                    src.convertTo(dst, -1, 1.1, 5); // Kecerahan & Kontras
+                    src.convertTo(dst, -1, 1.1, 5); // Tingkatkan kontras sedikit
                 } else if (filter === 'bw') {
                     let temp = new cv.Mat();
                     cv.cvtColor(src, temp, cv.COLOR_RGBA2GRAY);
                     cv.adaptiveThreshold(temp, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 51, 25);
                     temp.delete();
                 } else {
-                    dst = src.clone(); // Mode Normal
+                    dst = src.clone();
                 }
 
                 cv.imshow('canvasOutput', dst);
@@ -98,15 +97,15 @@ async function processImage(imageSrc, filter, quality) {
                 src.delete(); dst.delete();
                 resolve(dataUrl);
             } catch (err) {
-                console.error("OpenCV Error, menggunakan gambar asli:", err);
-                resolve(imageSrc); // Fallback: kirim gambar asli jika gagal agar tidak blank
+                console.error("OpenCV Error: ", err);
+                resolve(imageSrc); // Jika error, gunakan gambar asli
             }
         };
         img.src = imageSrc;
     });
 }
 
-// Logika Simpan PDF dengan Custom Nama & Deteksi Ukuran
+// Pembuatan PDF Anti-Gepeng & Cek Ukuran
 convertBtn.onclick = async () => {
     if (typeof cv === 'undefined' || !cv.Mat) return alert("Sabar, modul scanner sedang memuat...");
     
@@ -115,7 +114,7 @@ convertBtn.onclick = async () => {
 
     const doc = new jsPDF();
     const quality = qSlider.value;
-    const selectedFilter = document.getElementById('filter-select').value;
+    const selectedFilter = filterSelect.value;
 
     convertBtn.innerText = "Memproses...";
     convertBtn.disabled = true;
@@ -126,12 +125,11 @@ convertBtn.onclick = async () => {
             
             const processedData = await processImage(activeImages[i], selectedFilter, quality);
             
-            // --- LOGIKA ANTI GEPENG ---
+            // Logika Proporsional (Anti-Gepeng)
             const imgProps = doc.getImageProperties(processedData);
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
             
-            // Hitung rasio agar gambar proporsional
             const widthRatio = pageWidth / imgProps.width;
             const heightRatio = pageHeight / imgProps.height;
             const ratio = Math.min(widthRatio, heightRatio);
@@ -139,14 +137,13 @@ convertBtn.onclick = async () => {
             const imgWidth = imgProps.width * ratio;
             const imgHeight = imgProps.height * ratio;
             
-            // Posisikan di tengah halaman
             const xOffset = (pageWidth - imgWidth) / 2;
             const yOffset = (pageHeight - imgHeight) / 2;
             
             doc.addImage(processedData, 'JPEG', xOffset, yOffset, imgWidth, imgHeight, undefined, 'FAST');
-            // ---------------------------
         }
 
+        // Cek ukuran file sebelum simpan
         const pdfOutput = doc.output('blob');
         const fileSizeMB = pdfOutput.size / (1024 * 1024);
 
@@ -157,17 +154,7 @@ convertBtn.onclick = async () => {
 
         doc.save('Hasil_Scan_AyubR_2026.pdf');
     } catch (err) {
-        alert("Terjadi kesalahan.");
-        console.error(err);
-    } finally {
-        resetBtn();
-    }
-        }
-
-        doc.save(finalFileName);
-    } catch (err) {
-        alert("Gagal membuat PDF.");
-        console.error(err);
+        alert("Terjadi kesalahan sistem.");
     } finally {
         resetBtn();
     }
