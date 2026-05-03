@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BW Pro Scanner - Ayub R</title>
+    <title>Pro Scanner - Ayub R</title>
     <link rel="manifest" href="manifest.json">
     <script async src="https://docs.opencv.org/4.5.4/opencv.js" type="text/javascript"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -13,7 +13,7 @@
         .controls { display: flex; justify-content: center; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
         
         .compress-box { background: #e9ecef; padding: 15px; border-radius: 12px; margin: 15px auto; max-width: 400px; border: 1px solid #ddd; }
-        input[type=range] { width: 80%; cursor: pointer; }
+        select, input[type=range] { width: 80%; padding: 8px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; }
 
         button { padding: 12px 20px; border-radius: 50px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; color: white; }
         .btn-galeri { background: #6c757d; }
@@ -23,7 +23,7 @@
 
         #preview-container { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; padding: 20px; flex-grow: 1; }
         .img-wrapper { position: relative; border: 3px solid white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); height: fit-content; }
-        img { width: 110px; height: 150px; object-fit: cover; display: block; filter: grayscale(100%); }
+        img { width: 110px; height: 150px; object-fit: cover; display: block; }
         .del-btn { position: absolute; top: -10px; right: -10px; background: #ff4d4d; color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; font-weight: bold; }
         
         #video-feed { width: 100%; max-width: 400px; display: none; margin: 20px auto; border-radius: 15px; background: #000; }
@@ -36,7 +36,7 @@
 <body>
 
     <div class="header">
-        <h2>Pro BW Document Scanner</h2>
+        <h2>Pro Document Scanner</h2>
         <div class="controls">
             <input type="file" id="file-input" accept="image/*" multiple hidden>
             <button class="btn-galeri" onclick="document.getElementById('file-input').click()">+ Galeri</button>
@@ -44,41 +44,34 @@
         </div>
 
         <div class="compress-box">
-            <label style="font-weight: bold; display: block; margin-bottom: 5px;">
-                Target Ukuran (Kualitas): <span id="q-label">50%</span>
-            </label>
+            <label style="font-weight: bold;">Pilih Filter:</label><br>
+            <select id="filter-select">
+                <option value="normal">Normal (Asli)</option>
+                <option value="enhanced">Ditingkatkan (Cerah)</option>
+                <option value="bw">Hitam Putih (Dokumen)</option>
+            </select>
+
+            <label style="font-weight: bold; display: block; margin-top: 10px;">Kualitas (Target Size): <span id="q-label">50%</span></label>
             <input type="range" id="q-slider" min="0.1" max="1.0" step="0.1" value="0.5">
-            <p style="font-size: 11px; color: #555; margin-top: 5px;">Gunakan 30-50% agar file 5MB turun drastis.</p>
             <button id="convert-btn" class="btn-simpan" disabled>SIMPAN PDF SEKARANG</button>
         </div>
     </div>
 
     <video id="video-feed" autoplay playsinline></video>
     <button id="snap-btn" onclick="takePhoto()">AMBIL FOTO</button>
-
     <div id="preview-container"></div>
     <canvas id="canvasOutput"></canvas>
 
-    <footer>
-        — Ayub R 2026 —
-    </footer>
+    <footer>— Ayub R 2026 —</footer>
 
-    <!-- Cache Buster Script -->
     <script>
-        // Memanggil app.js dengan parameter waktu agar tidak terkena cache
         const script = document.createElement('script');
         script.src = 'app.js?v=' + Date.now();
         document.body.appendChild(script);
     </script>
-
     <script>
-        // Registrasi Service Worker
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('SW Registered'))
-                    .catch(err => console.log('SW Failed', err));
-            });
+            window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); });
         }
     </script>
 </body>
