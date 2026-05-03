@@ -63,6 +63,23 @@
         — Ayub R 2026 —
     </footer>
 
-    <script src="app.js"></script>
+    <!-- Cache Buster Script -->
+    <script>
+        // Memanggil app.js dengan parameter waktu agar tidak terkena cache
+        const script = document.createElement('script');
+        script.src = 'app.js?v=' + Date.now();
+        document.body.appendChild(script);
+    </script>
+
+    <script>
+        // Registrasi Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('SW Registered'))
+                    .catch(err => console.log('SW Failed', err));
+            });
+        }
+    </script>
 </body>
 </html>
