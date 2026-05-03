@@ -5,16 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BW Pro Scanner - Ayub R</title>
     <link rel="manifest" href="manifest.json">
-    <!-- Load OpenCV & jsPDF dari CDN -->
     <script async src="https://docs.opencv.org/4.5.4/opencv.js" type="text/javascript"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; text-align: center; background: #f0f2f5; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; margin: 0; padding: 0; }
         .header { background: #fff; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
         .controls { display: flex; justify-content: center; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
         
-        /* Box Kompresi */
-        .compress-box { background: #e9ecef; padding: 15px; border-radius: 12px; margin: 15px auto; max-width: 400px; }
+        .compress-box { background: #e9ecef; padding: 15px; border-radius: 12px; margin: 15px auto; max-width: 400px; border: 1px solid #ddd; }
         input[type=range] { width: 80%; cursor: pointer; }
 
         button { padding: 12px 20px; border-radius: 50px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; color: white; }
@@ -23,19 +21,15 @@
         .btn-simpan { background: #28a745; width: 220px; font-size: 16px; margin-top: 10px; }
         button:disabled { background: #ccc; cursor: not-allowed; }
 
-        /* Preview Gambar */
-        #preview-container { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; padding: 20px; min-height: 200px; }
-        .img-wrapper { position: relative; border: 3px solid white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); background: #ddd; }
+        #preview-container { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; padding: 20px; min-height: 100px; }
+        .img-wrapper { position: relative; border: 3px solid white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         img { width: 110px; height: 150px; object-fit: cover; display: block; filter: grayscale(100%); }
         .del-btn { position: absolute; top: -10px; right: -10px; background: #ff4d4d; color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; font-weight: bold; }
         
-        /* Kamera Feed */
-        #video-feed { width: 100%; max-width: 400px; display: none; margin: 20px auto; border-radius: 15px; background: #000; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        #video-feed { width: 100%; max-width: 400px; display: none; margin: 20px auto; border-radius: 15px; background: #000; }
         #snap-btn { display: none; background: #ff4d4d; margin: 10px auto 30px; padding: 15px 40px; border-radius: 50px; }
         
         canvas { display: none; }
-
-        /* Footer Identitas */
         footer { margin-top: 50px; padding: 30px; color: #6c757d; font-size: 14px; font-weight: 500; letter-spacing: 1px; }
     </style>
 </head>
@@ -54,7 +48,7 @@
                 Target Ukuran (Kualitas): <span id="q-label">50%</span>
             </label>
             <input type="range" id="q-slider" min="0.1" max="1.0" step="0.1" value="0.5">
-            <p style="font-size: 11px; color: #555; margin-top: 5px;">Gunakan 30-50% untuk hasil di bawah 2MB.</p>
+            <p style="font-size: 11px; color: #555; margin-top: 5px;">Gunakan 30-50% agar file 5MB turun ke < 2MB.</p>
             <button id="convert-btn" class="btn-simpan" disabled>SIMPAN PDF SEKARANG</button>
         </div>
     </div>
