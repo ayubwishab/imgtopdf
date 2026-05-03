@@ -7,22 +7,27 @@ const ASSETS = [
     'https://docs.opencv.org/4.5.4/opencv.js'
 ];
 
-// Menghapus cache versi lama saat update dilakukan
-self.addEventListener('activate', (e) => {
-    e.waitUntil(
-        caches.keys().then((keys) => {
+// Menghapus cache lama saat Service Worker baru diaktifkan
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        caches.keys().then((cacheNames) => {
             return Promise.all(
-                keys.map((key) => {
-                    if (key !== CACHE_NAME) return caches.delete(key);
+                cacheNames.map((cache) => {
+                    if (cache !== CACHE_NAME) {
+                        console.log('Menghapus cache lama...');
+                        return caches.delete(cache);
+                    }
                 })
             );
         })
     );
 });
 
-// Strategi: Utamakan ambil dari internet agar tampilan selalu baru
-self.addEventListener('fetch', (e) => {
-    e.respondWith(
-        fetch(e.request).catch(() => caches.match(e.request))
+// Strategi Network First: Ambil dari internet dulu, kalau offline baru ambil cache
+self.addEventListener('fetch', (event) => {
+    event.respondWith(
+        fetch(event.request).catch(() => {
+            return caches.match(event.request);
+        })
     );
 });
