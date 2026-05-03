@@ -12,7 +12,7 @@ qSlider.oninput = function() {
     qLabel.innerText = Math.round(this.value * 100) + "%"; 
 };
 
-// Input dari Galeri[cite: 4]
+// Input dari Galeri
 document.getElementById('file-input').addEventListener('change', (e) => {
     Array.from(e.target.files).forEach(file => {
         const reader = new FileReader();
@@ -57,7 +57,7 @@ function takePhoto() {
     addImageToList(canvas.toDataURL('image/jpeg', 0.8));
 }
 
-// Pengolahan Gambar Pro (OpenCV)
+// Pengolahan Gambar Pro (OpenCV)[cite: 4]
 async function processScan(imageSrc, quality) {
     return new Promise((resolve) => {
         const img = new Image();
@@ -66,7 +66,7 @@ async function processScan(imageSrc, quality) {
             let gray = new cv.Mat();
             let dst = new cv.Mat();
             
-            // 1. Kompresi Dimensi (Resize) agar file tidak bengkak
+            // Kompresi Dimensi (Resize otomatis) agar file ringan[cite: 3, 4]
             let width = src.cols;
             let height = src.rows;
             const MAX_WIDTH = 1200; 
@@ -76,14 +76,14 @@ async function processScan(imageSrc, quality) {
                 cv.resize(src, src, new cv.Size(width, height), 0, 0, cv.INTER_AREA);
             }
 
-            // 2. Scan Effect (Putih Bersih & Teks Tajam)
+            // Efek Scan BW Bersih[cite: 4]
             cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
             cv.normalize(gray, gray, 0, 255, cv.NORM_MINMAX);
             cv.adaptiveThreshold(gray, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 51, 25);
             
             cv.imshow('canvasOutput', dst);
             
-            // 3. Kompresi Kualitas sesuai Slider
+            // Kompresi Kualitas sesuai Slider[cite: 4]
             const dataUrl = document.getElementById('canvasOutput').toDataURL('image/jpeg', parseFloat(quality));
             
             src.delete(); gray.delete(); dst.delete();
@@ -107,13 +107,12 @@ convertBtn.onclick = async () => {
         const pWidth = doc.internal.pageSize.getWidth();
         const pHeight = doc.internal.pageSize.getHeight();
         
-        // Kompresi Internal jsPDF
         doc.addImage(processedData, 'JPEG', 0, 0, pWidth, pHeight, undefined, 'FAST');
     }
     doc.save('Hasil_Scan_AyubR.pdf');
 };
 
-// Registrasi Service Worker
+// PWA Offline Mode[cite: 4]
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js');
 }
